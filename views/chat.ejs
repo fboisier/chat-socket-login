@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>Whatsapp Web</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="image/favicon.png" type="image/png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,600%7CRoboto:300,400,500"
+        media="all">
+    <link href="css/bootstrap3.min.css" rel="stylesheet">
+    <link href="css/icomoon.css" rel="stylesheet">
+    <link href="css/font-awesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/queries.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/toastr.min.css">
+   
+</head>
+
+<body>
+    <div class="w-app">
+        <div class="container">
+
+            <section class="col-md-12 w-contacts w-messages">
+                <header class="w-chat-messages clearfix">
+                    <div class="avatar col-xs-9 w-chat-profile">
+                        <img src="image/41MQFnoEgqL._AC_.jpg" alt="">
+                        <h4 class="w-contact-name">Sala de Chat! - <%=user.name%>
+                        </h4>
+                        <ul class="w-users-messages">
+                            <% for (u of usuarios) {%>
+                                <% if (u.mensajes > 0) { %>
+                                    <li><%=u.name%> (<%=u.mensajes%>)</li>
+                                <% } %>
+                            <% } %>
+                        </ul>
+                    </div>
+                    <div class="w-chat-controls col-xs-2">
+                        <div class="w-chat-controls col-xs-2">
+                            <span><a href="/logout">LogOut</a></span>
+                        </div>
+                    </div>
+                </header>
+                <section class="w-chat-panel">
+                    <div class="w-message-list clearfix" id="chat">
+                        <% for(mensaje of chats) { %>
+                            <% if (mensaje.UserId != user.id ){ %>
+                                <div class="w-message w-message-in">
+                                    <div class="w-message-text">
+                                        <h5 class="blue-1"><%= mensaje.User.name%></h5>
+                                        <p><%= mensaje.mensaje%></p>
+                                        <div class="time"><%= mensaje.createdAt.getHours()%>:<%= (mensaje.createdAt.getMinutes() < 10 ? '0':'') + mensaje.createdAt.getMinutes() %></div>
+                                    </div>
+                                </div>
+                            <% } else { %>
+                                    <div class="w-message w-message-out">
+                                        <div class="w-message-text">
+                                            <p><%= mensaje.mensaje%></p>
+                                            <div class="time"><%= mensaje.createdAt.getHours()%>:<%= (mensaje.createdAt.getMinutes() < 10 ? '0':'') + mensaje.createdAt.getMinutes() %></div>
+                                        </div>
+                                    </div>
+                            <%}%>
+                        <% } %>
+                                        
+                    </div>
+                </section>
+
+                <footer class="pane-footer w-write-message-footer">
+                    <ul class="w-write-message-list clearfix">
+                        <li class="col-xs-1 w-write-message-item icon-insert_emoticon w-write-message-icon"></li>
+                        <li class="col-xs-10 w-write-message-item w-write-message-input">
+                            <input id="mensaje" type="text" name="w-message-input" class="w-write-message-field"
+                                placeholder="Escribe tu mensaje aquí" id="mensajes">
+                        </li>
+                        <li class="col-xs-1 w-write-message-item icon-mic w-write-message-icon"></li>
+                    </ul>
+                </footer>
+            </section>
+        </div>
+    </div>
+    <script type="text/javascript" src="js/main.js"></script>
+    <script type="text/javascript" src="js/jquery-3.5.1.min.js"></script>
+
+    <script src="js/moment-with-locales.min.js"></script>
+    <script src="js/misfunciones.js"></script>
+    <script type ="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script src="/js/toastr.min.js"></script>
+
+    <script>
+
+        $(document).ready(function () {
+
+            toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            }
+
+            const socket = io("http://localhost:8000");
+
+            moment.locale("es");
+            $("#mensaje").on("keydown", function (e) {
+
+                if (e.keyCode == 13) {
+
+                    let html = `    <div class="w-message w-message-out">
+                                        <div class="w-message-text">
+                                            <p>${$("#mensaje").val()}</p>
+                                            <div class="time">${moment().format('HH:mm')}</div>
+                                        </div>
+                                    </div>`;
+
+
+                    $("#chat").append(html);
+
+                    const datos = {
+                        mensaje: $("#mensaje").val(),
+                        hora: `'${moment().format('HH:mm')}'`,
+                        usuario: '<%=user.name%>'
+                    }
+
+                    socket.emit('message', datos)
+
+                    $.post("/guardarmensaje",datos, function (res) {
+
+                        console.log("DATOS ENVIADOS AL SERVIDOR.", res)
+
+                    }, "json");
+
+                    scrollBottom();
+
+                    console.log($("#mensaje").val());
+                    $("#mensaje").val("");
+
+
+                }
+
+            });
+
+            socket.on('messageIn', function(data) {
+
+                let html = `<div class="w-message w-message-in">
+                                <div class="w-message-text">
+                                    <h5 class="blue-1">${data.usuario}</h5>
+                                    <p>${data.mensaje}</p>
+                                    <div class="time">${data.hora}</div>
+                                </div>
+                            </div>`;
+
+
+                $("#chat").append(html);
+                scrollBottom();
+
+
+            });
+
+            socket.on('usuarioConectado', function(data) {
+
+                toastr.info(data,"Nuevo Usuario");
+
+            });
+
+            socket.on('usuarioDesconectado', function(data) {
+
+                toastr.warning(data,"Lo sentimos.");
+
+            });
+
+            divChatbox = $("#chat");
+
+            scrollBottom();
+
+
+        });
+
+    </script>
+
+</body>
+
+</html>
