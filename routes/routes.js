@@ -38,9 +38,9 @@ router.get('/', [checkLogin], async (req, res) => {
         raw: true,
         attributes: { 
             include: [
-                [Sequelize.fn("COUNT", Sequelize.col("mensajes.id")), "mensajes"],
-                [Sequelize.fn("AVG", Sequelize.col("mensajes.id")), "promedio"],
-                [Sequelize.fn("SUM", Sequelize.col("mensajes.id")), "suma"]
+                [Sequelize.fn("COUNT", Sequelize.col("Mensajes.id")), "mensajes"],
+                [Sequelize.fn("AVG", Sequelize.col("Mensajes.id")), "promedio"],
+                [Sequelize.fn("SUM", Sequelize.col("Mensajes.id")), "suma"]
             ] , 
         },
         include: [{
